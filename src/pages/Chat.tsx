@@ -19,7 +19,7 @@ interface Conversation {
 }
 
 export default function Chat() {
-  const { currentCompany, chatMessages, addChatMessage, clearChatMessages } = useStore();
+  const { currentCompany, chatMessages, addChatMessage, clearChatMessages, addUser } = useStore();
   const [newMessage, setNewMessage] = useState('');
   const [activeConversationId, setActiveConversationId] = useState('conversation-1');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -65,6 +65,45 @@ export default function Chat() {
       sender: 'user',
       companyId: activeConversation.companyId,
     });
+
+    const containsUsuarioKeyword = /usuario/i.test(messageText);
+
+    if (containsUsuarioKeyword) {
+      const companyId = activeConversation.companyId || currentCompany?.id;
+
+      if (!companyId) {
+        console.warn('⚠️ No se pudo determinar una empresa para crear el usuario');
+      } else {
+        const timestamp = Date.now();
+        const mockUser = {
+          name: `Usuario IWA Admin`,
+          email: `iwaadmin@empresa.com`,
+          role: 'Viewer' as const,
+          companyId,
+          status: 'Activo' as const,
+          permissions: {
+            users: true,
+            companies: false,
+            inventory: false,
+            reports: true,
+            chat: true,
+          },
+        };
+
+        addUser(mockUser);
+
+        setTimeout(() => {
+          const confirmation = `He agregado al usuario ${mockUser.name} (${mockUser.email}) correctamente.`;
+          console.log('🤖 Bot respondiendo con confirmación de usuario:', confirmation);
+          addChatMessage({
+            text: confirmation,
+            sender: 'bot',
+            companyId: companyId,
+          });
+        }, 600);
+        return;
+      }
+    }
 
     // Simular respuesta del bot
     setTimeout(() => {

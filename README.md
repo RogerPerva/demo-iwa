@@ -20,8 +20,6 @@ npm --version   # Debería mostrar 9.x.x o superior
 #### Pasos para correr el proyecto
 
 ```sh
-# Paso 1: Navegar al directorio del proyecto
-cd /Users/rogerpervaz/Documents/IWA/demo
 
 # Paso 2: Instalar las dependencias
 npm install --legacy-peer-deps
