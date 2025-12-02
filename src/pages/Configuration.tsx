@@ -124,9 +124,18 @@ export default function Configuration() {
     toast.success(`${type === 'user' ? 'Usuario' : type === 'company' ? 'Empresa' : 'Producto'} eliminado`);
   };
 
-  const handleSendWelcomeSMS = (user: User) => {
-    sendSMS(user.email, `Bienvenido ${user.name} al sistema administrativo!`);
-    toast.success(`SMS de bienvenida enviado a ${user.name}`);
+  const handleSendWelcomeSMS = async (user: User) => {
+    const loadingToast = toast.loading(`Enviando correo a ${user.name}...`);
+
+    const result = await sendSMS(user.email, `Bienvenido ${user.name} al sistema administrativo!`);
+
+    toast.dismiss(loadingToast);
+
+    if (result.success) {
+      toast.success(`Correo de bienvenida enviado a ${user.name}`);
+    } else {
+      toast.error(`Error al enviar correo: ${result.message}`);
+    }
   };
 
   const resetForms = () => {

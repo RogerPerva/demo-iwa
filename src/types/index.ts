@@ -97,6 +97,6 @@ export interface AppState {
   addChatMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
   clearChatMessages: (companyId: string) => void;
 
-  // SMS Simulation
-  sendSMS: (to: string, message: string) => void;
+  // Email Service
+  sendSMS: (to: string, message: string) => Promise<{ success: boolean; message: string; messageId?: string; error?: string }>;
 }

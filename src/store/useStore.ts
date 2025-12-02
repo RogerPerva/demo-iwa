@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppState } from '@/types';
 import { mockUsers, mockCompanies, mockProducts, mockReports, mockActivityLog, mockChatMessages } from '@/lib/mockData';
+import { emailService } from '@/services/emailService';
 
 export const useStore = create<AppState>()(
   persist(
@@ -159,16 +160,56 @@ export const useStore = create<AppState>()(
         }));
       },
 
-      sendSMS: (to, message) => {
+      sendSMS: async (to, message) => {
         const { currentUser, currentCompany } = get();
         if (currentUser && currentCompany) {
-          get().addActivityLog({
-            type: 'user_created',
-            description: `SMS enviado a ${to}: "${message.substring(0, 30)}..."`,
-            companyId: currentCompany.id,
-            userId: currentUser.id
-          });
+          // Intentar enviar el correo real usando Azure
+          try {
+            const result = await emailService.sendEmail({
+              to: to,
+              subject: 'Notificación del Sistema',
+              body: message
+            });
+
+            if (result.success) {
+              get().addActivityLog({
+                type: 'user_created',
+                description: `Correo enviado a ${to}: "${message.substring(0, 30)}..."`,
+                companyId: currentCompany.id,
+                userId: currentUser.id
+              });
+              return result;
+            } else {
+              console.error('Error al enviar correo:', result.error);
+              // Si falla el envío, aún registramos el intento
+              get().addActivityLog({
+                type: 'user_created',
+                description: `Error al enviar correo a ${to}`,
+                companyId: currentCompany.id,
+                userId: currentUser.id
+              });
+              return result;
+            }
+          } catch (error) {
+            console.error('Error al enviar correo:', error);
+            // Si hay error, registrar en el log
+            get().addActivityLog({
+              type: 'user_created',
+              description: `Error al enviar correo a ${to}`,
+              companyId: currentCompany.id,
+              userId: currentUser.id
+            });
+            return {
+              success: false,
+              message: 'Error al enviar el correo',
+              error: error instanceof Error ? error.message : 'Error desconocido'
+            };
+          }
         }
+        return {
+          success: false,
+          message: 'Usuario o empresa no encontrados'
+        };
       }
     }),
     {
