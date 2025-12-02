@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { FileText, Download, FileSpreadsheet, Calendar, Send, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { exportToPDF, exportToExcel } from '@/lib/exportUtils';
+import { emailService } from '@/services/emailService';
 
 export default function Reports() {
   const { currentCompany, reports, users, products, activityLog, addActivityLog, sendSMS } = useStore();
@@ -121,6 +122,54 @@ export default function Reports() {
     });
 
     toast.success('Reporte exportado en Excel');
+  };
+
+  const handleSendReportByEmail = async () => {
+    if (!emailRecipient) {
+      toast.error('Por favor ingresa un correo electrónico');
+      return;
+    }
+
+    const loadingToast = toast.loading('Generando y enviando reporte...');
+
+    try {
+      const { data, name } = getCurrentData();
+
+      // Convertir los datos a un formato legible
+      const reportData = {
+        'Nombre del Reporte': name,
+        'Fecha': new Date().toLocaleString('es-ES'),
+        'Total de Registros': data.length,
+        'Empresa': currentCompany?.name,
+        'Resumen': `Este reporte contiene ${data.length} registros generados el ${new Date().toLocaleString('es-ES')}`
+      };
+
+      // Enviar el correo con PDF
+      const result = await emailService.sendReportWithPDF(
+        emailRecipient,
+        name,
+        reportData
+      );
+
+      toast.dismiss(loadingToast);
+
+      if (result.success) {
+        toast.success(`Reporte enviado a ${emailRecipient}`);
+        addActivityLog({
+          type: 'report_generated',
+          description: `Se envió reporte "${name}" por correo a ${emailRecipient}`,
+          companyId: currentCompany?.id || '',
+          userId: useStore.getState().currentUser?.id || ''
+        });
+        setEmailRecipient(''); // Limpiar el campo
+      } else {
+        toast.error(`Error: ${result.message}`);
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Error al enviar el reporte');
+      console.error(error);
+    }
   };
 
   const handleScheduleReport = () => {
@@ -247,8 +296,12 @@ export default function Reports() {
                       <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button onClick={handleScheduleReport}>
-                        Enviar
+                      <Button onClick={async () => {
+                        await handleSendReportByEmail();
+                        setScheduleDialogOpen(false);
+                      }}>
+                        <Send className="h-4 w-4 mr-2" />
+                        Enviar con PDF
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -336,8 +389,12 @@ export default function Reports() {
                       <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button onClick={handleScheduleReport}>
-                        Enviar
+                      <Button onClick={async () => {
+                        await handleSendReportByEmail();
+                        setScheduleDialogOpen(false);
+                      }}>
+                        <Send className="h-4 w-4 mr-2" />
+                        Enviar con PDF
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -425,8 +482,12 @@ export default function Reports() {
                       <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button onClick={handleScheduleReport}>
-                        Enviar
+                      <Button onClick={async () => {
+                        await handleSendReportByEmail();
+                        setScheduleDialogOpen(false);
+                      }}>
+                        <Send className="h-4 w-4 mr-2" />
+                        Enviar con PDF
                       </Button>
                     </DialogFooter>
                   </DialogContent>
